@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Run Fuel & Hydration Calculator</title>
+  <meta name="description" content="Quickly estimate daily water, sodium (salt), and carbohydrate needs based on body metrics and running activity." />
+  <style>
+    :root{
+      --bg:#0b0c10;
+      --panel:#13151b;
+      --muted:#a9b0bd;
+      --text:#e9edf3;
+      --accent:#B22222; /* Crimson Mist */
+      --ok:#3ecf8e;
+      --warn:#ffb020;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";}
+    header{padding:24px 16px 8px;max-width:1000px;margin:0 auto}
+    header h1{margin:0;font-size:clamp(1.4rem,2.8vw,2rem);letter-spacing:.3px}
+    header p{margin:6px 0 0;color:var(--muted)}
+    main{max-width:1000px;margin:12px auto 40px;display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:0 16px}
+    @media (max-width:860px){ main{grid-template-columns:1fr} }
+    .card{background:var(--panel);border:1px solid #1c1f29;border-radius:14px;padding:16px 14px}
+    .card h2{margin:0 0 12px;font-size:1.05rem;color:#fff}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    label{display:block;font-size:.92rem;margin:10px 0 6px;color:var(--muted)}
+    input[type="number"], select{width:100%;padding:10px;border-radius:10px;border:1px solid #262a36;background:#0f1117;color:#e6ebf2;outline:none}
+    input[type="number"]::-webkit-outer-spin-button,input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+    .units{display:flex;gap:8px;margin:6px 0 0}
+    .units button{flex:1;padding:8px 10px;border-radius:10px;border:1px solid #2b2f3c;background:#0f1117;color:#cfd6e4;cursor:pointer}
+    .units button.active{border-color:var(--accent);color:#fff;box-shadow:0 0 0 1px var(--accent) inset}
+    .hint{font-size:.85rem;color:var(--muted);margin-top:6px}
+    .out{display:grid;grid-template-columns:1fr;gap:12px}
+    .pill{display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:12px;background:#0f1117;border:1px solid #262a36}
+    .pill b{font-size:1.05rem}
+    .pill small{color:var(--muted)}
+    .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    button.action{padding:10px 12px;border-radius:12px;border:1px solid #2b2f3c;background:linear-gradient(180deg,#141824,#0f1219);color:#e6ebf2;cursor:pointer}
+    button.action.primary{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+    .foot{color:var(--muted);font-size:.8rem;margin-top:12px;line-height:1.4}
+    .range{display:flex;gap:6px;flex-wrap:wrap;color:var(--muted);font-size:.9rem}
+    .range b{color:#fff}
+    .badge{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #2b2f3c;background:#0f1117;margin-left:6px;color:#cfd6e4;font-size:.8rem}
+    a{color:#cfe1ff;text-decoration:none}
+    .ok{color:var(--ok)} .warn{color:var(--warn)}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Run Fuel & Hydration Calculator</h1>
+    <p>Estimate daily <b>water</b>, <b>sodium (salt)</b>, and <b>carbohydrate</b> needs from body metrics and running. Share with clients or friends—URL updates with your inputs.</p>
+  </header>
+
+  <main>
+    <section class="card" aria-labelledby="inputs-heading">
+      <h2 id="inputs-heading">Inputs</h2>
+
+      <div class="units" role="tablist" aria-label="Units">
+        <button id="btn-imperial" class="active" role="tab" aria-selected="true">Imperial</button>
+        <button id="btn-metric" role="tab" aria-selected="false">Metric</button>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="age">Age (years)</label>
+          <input id="age" type="number" min="10" max="100" placeholder="23" inputmode="numeric">
+        </div>
+        <div>
+          <label for="sex">Sex</label>
+          <select id="sex">
+            <option value="unspecified" selected>Unspecified</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="height">Height (<span id="height-unit">in</span>)</label>
+          <input id="height" type="number" min="36" max="90" placeholder="70">
+        </div>
+        <div>
+          <label for="weight">Weight (<span id="weight-unit">lb</span>)</label>
+          <input id="weight" type="number" min="70" max="400" placeholder="180">
+        </div>
+      </div>
+
+      <hr style="border:0;border-top:1px solid #1c1f29;margin:12px 0">
+
+      <div class="row3">
+        <div>
+          <label for="duration">Run Duration (min)</label>
+          <input id="duration" type="number" min="0" max="600" placeholder="60">
+        </div>
+        <div>
+          <label for="intensity">Intensity</label>
+          <select id="intensity">
+            <option value="easy" selected>Easy</option>
+            <option value="moderate">Moderate</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+        <div>
+          <label for="goal">Goal</label>
+          <select id="goal">
+            <option value="maintain" selected>Maintenance</option>
+            <option value="fatloss">Leaner</option>
+            <option value="performance">Performance</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row3">
+        <div>
+          <label for="temp">Environment</label>
+          <select id="temp">
+            <option value="cool">&lt; 60°F / &lt; 16°C</option>
+            <option value="temperate" selected>60–75°F / 16–24°C</option>
+            <option value="hot">75–85°F / 24–29°C</option>
+            <option value="veryhot">&gt; 85°F / &gt; 29°C</option>
+          </select>
+        </div>
+        <div>
+          <label for="humidity">Humidity</label>
+          <select id="humidity">
+            <option value="low">&lt; 40%</option>
+            <option value="moderate" selected>40–70%</option>
+            <option value="high">&gt; 70%</option>
+          </select>
+        </div>
+        <div>
+          <label for="sweater">Sweatiness</label>
+          <select id="sweater">
+            <option value="light">Light</option>
+            <option value="average" selected>Average</option>
+            <option value="heavy">Heavy</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="btns">
+        <button class="action primary" id="calc">Calculate</button>
+        <button class="action" id="share">Share this setup</button>
+        <button class="action" id="reset">Reset</button>
+      </div>
+      <p class="hint">Formulas follow widely used sports nutrition guidance (ACSM/IOC). This is a general educational estimate, not medical advice.</p>
+    </section>
+
+    <section class="card" aria-labelledby="outputs-heading">
+      <h2 id="outputs-heading">Results</h2>
+      <div class="out" id="results">
+        <div class="pill">
+          <div>
+            <b id="water-total">—</b>
+            <small id="water-total-sub" class="badge">total/day</small>
+          </div>
+          <div>
+            <span id="water-hour">—</span>
+            <small class="badge">during run (per hour)</small>
+          </div>
+        </div>
+
+        <div class="pill">
+          <div>
+            <b id="sodium-total">—</b>
+            <small id="salt-equiv" class="badge">≈ table salt</small>
+          </div>
+          <div>
+            <span id="sodium-hour">—</span>
+            <small class="badge">during run (per hour)</small>
+          </div>
+        </div>
+
+        <div class="pill">
+          <div>
+            <b id="carbs-day">—</b>
+            <small class="badge">per day</small>
+          </div>
+          <div>
+            <span id="carbs-hour">—</span>
+            <small class="badge">during run (per hour)</small>
+          </div>
+        </div>
+
+        <div class="range" id="notes"></div>
+      </div>
+
+      <div class="foot">
+        <b>Assumptions</b>:
+        <ul>
+          <li>Baseline water: ~35 mL per kg bodyweight per day.</li>
+          <li>During-run fluid: ~0.4–0.8 L/h; adjusted by intensity and heat/humidity.</li>
+          <li>Sodium replacement during running: ~300–1000 mg/h depending on sweat rate/salinity and heat (≈ 0.8–2.5 g table salt/h).</li>
+          <li>Daily carbohydrate targets by training load (g/kg/day): Light 3–5; Moderate 5–7; High 6–10; Very High 8–12. During-run fuels: ~30–90 g/h based on duration and gut training.</li>
+        </ul>
+        <p>Personal sweat testing and diet history provide the best accuracy. Aim to avoid &gt;2% body mass loss on runs. If you have health conditions, ask a clinician or sports RD.</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // --- Utilities ---
+    const $ = (id)=>document.getElementById(id);
+    const clamp = (x, lo, hi)=>Math.max(lo, Math.min(hi, x));
+    const round = (x, d=0)=>Number.parseFloat(x).toFixed(d);
+
+    let units = 'imperial'; // or 'metric'
+
+    const setUnits = (u)=>{
+      units = u;
+      const isImp = u==='imperial';
+      $('btn-imperial').classList.toggle('active', isImp);
+      $('btn-metric').classList.toggle('active', !isImp);
+      $('height-unit').textContent = isImp ? 'in' : 'cm';
+      $('weight-unit').textContent = isImp ? 'lb' : 'kg';
+
+      // Shift min/max placeholders to sensible ranges
+      $('height').placeholder = isImp ? '70' : '178';
+      $('height').min = isImp ? 36 : 120;
+      $('height').max = isImp ? 90 : 230;
+      $('weight').placeholder = isImp ? '180' : '82';
+      $('weight').min = isImp ? 70 : 32;
+      $('weight').max = isImp ? 400 : 182;
+
+      // Convert current values if present
+      const h = parseFloat($('height').value);
+      const w = parseFloat($('weight').value);
+      if(!isNaN(h) && !isNaN(w)){
+        if(isImp){
+          // metric -> imperial
+          $('height').value = round(h/2.54, 0);
+          $('weight').value = round(w*2.20462, 0);
+        } else {
+          // imperial -> metric
+          $('height').value = round(h*2.54, 0);
+          $('weight').value = round(w/2.20462, 1);
+        }
+      }
+      updateURL();
+    };
+
+    $('btn-imperial').addEventListener('click', ()=>setUnits('imperial'));
+    $('btn-metric').addEventListener('click', ()=>setUnits('metric'));
+
+    // --- Core calculator ---
+    function calc(){
+      const age = parseInt($('age').value)||NaN;
+      const sex = $('sex').value;
+      let height = parseFloat($('height').value)||NaN;
+      let weight = parseFloat($('weight').value)||NaN;
+      const durationMin = parseFloat($('duration').value)||0;
+      const intensity = $('intensity').value;
+      const goal = $('goal').value;
+      const temp = $('temp').value;
+      const humidity = $('humidity').value;
+      const sweater = $('sweater').value;
+
+      if(units==='imperial'){
+        // convert to metric
+        height = isNaN(height)?NaN : height*2.54; // cm
+        weight = isNaN(weight)?NaN : weight/2.20462; // kg
+      }
+      const weightKg = weight;
+
+      // --- Water ---
+      // Baseline daily water (non-exercise): 35 mL/kg
+      const baselineWaterL = isNaN(weightKg) ? 0 : (0.035 * weightKg); // L
+
+      // During-run fluid per hour baseline by intensity
+      let fluidPerHour = { easy:0.45, moderate:0.6, hard:0.75 }[intensity];
+
+      // Environment multipliers
+      const tempMult = { cool:0.9, temperate:1.0, hot:1.2, veryhot:1.4 }[temp];
+      const humidMult = { low:0.95, moderate:1.0, high:1.1 }[humidity];
+      fluidPerHour *= tempMult * humidMult;
+
+      // Clamp to broadly recommended range
+      fluidPerHour = clamp(fluidPerHour, 0.35, 1.0);
+
+      const durationH = durationMin/60;
+      const runFluidsL = fluidPerHour * durationH;
+      const totalWaterL = baselineWaterL + runFluidsL;
+
+      // --- Sodium (mg) ---
+      let sodPerHour = { easy:350, moderate:550, hard:750 }[intensity];
+      // Increase with heat/humidity and sweater type
+      const sweaterMult = { light:0.85, average:1.0, heavy:1.3 }[sweater];
+      sodPerHour *= tempMult * humidMult * sweaterMult;
+      sodPerHour = clamp(sodPerHour, 300, 1000);
+      const sodTotal = sodPerHour * durationH;
+      const saltGrams = sodTotal / 393.0; // 39.3% Na in table salt
+
+      // --- Carbohydrates ---
+      // Daily g/kg by training load
+      let gkgLow=3, gkgHigh=5; // default light
+      if(durationH >= 0.75 && durationH < 1.5){ gkgLow=5; gkgHigh=7; }
+      else if(durationH >= 1.5 && durationH < 3){ gkgLow=6; gkgHigh=10; }
+      else if(durationH >= 3){ gkgLow=8; gkgHigh=12; }
+
+      // Nudge by goal & intensity
+      const goalShift = goal==='fatloss' ? -0.5 : (goal==='performance' ? +0.5 : 0);
+      const intShift = intensity==='hard' ? +0.3 : (intensity==='easy' ? -0.2 : 0);
+      gkgLow = Math.max(2.5, gkgLow + goalShift + intShift*0.6);
+      gkgHigh = Math.min(12, gkgHigh + goalShift + intShift*0.6);
+
+      const carbsDayLow = isNaN(weightKg) ? 0 : gkgLow * weightKg;
+      const carbsDayHigh = isNaN(weightKg) ? 0 : gkgHigh * weightKg;
+      const carbsDayMid = (carbsDayLow + carbsDayHigh)/2;
+
+      // During-run carbs per hour
+      let carbsPerHour = { easy:35, moderate:50, hard:70 }[intensity];
+      if(durationH >= 2.5){ carbsPerHour = Math.max(carbsPerHour, 70); } // allow higher end for long duration
+      carbsPerHour = clamp(carbsPerHour, 30, 90);
+
+      // --- Format helpers for units ---
+      const LtoOz = (L)=>L*33.814;
+      const fmtWater = (L)=> units==='imperial' ? `${round(LtoOz(L),0)} oz` : `${round(L,2)} L`;
+      const fmtWaterPerH = (Lh)=> units==='imperial' ? `${round(LtoOz(Lh),0)} oz/h` : `${round(Lh,2)} L/h`;
+      const fmtSodium = (mg)=> `${round(mg,0)} mg`;
+      const fmtSalt = (g)=> `${round(g,2)} g salt`;
+      const fmtCarbs = (g)=> `${round(g,0)} g`;
+
+      // --- Write outputs ---
+      $('water-total').textContent = totalWaterL>0 ? fmtWater(totalWaterL) : '—';
+      $('water-total-sub').textContent = 'total water (day)';
+      $('water-hour').textContent = fmtWaterPerH(fluidPerHour);
+
+      $('sodium-total').textContent = sodTotal>0 ? fmtSodium(sodTotal) : '—';
+      $('sodium-hour').textContent = fmtSodium(sodPerHour);
+      $('salt-equiv').textContent = sodTotal>0 ? `≈ ${fmtSalt(saltGrams)} (day)` : '≈ table salt';
+
+      const carbsDayTxt = carbsDayMid>0 ? `${fmtCarbs(carbsDayLow)}–${fmtCarbs(carbsDayHigh)}` : '—';
+      $('carbs-day').textContent = carbsDayTxt;
+      $('carbs-hour').textContent = fmtCarbs(carbsPerHour);
+
+      // Notes
+      const notes = [];
+      notes.push(`Baseline water assumes ~35 mL/kg/day (${round(baselineWaterL,2)} L for you).`);
+      notes.push(`On-run drink target ~${fmtWaterPerH(fluidPerHour)}; adjust to avoid >2% body mass loss.`);
+      notes.push(`Sodium replacement ~${fmtSodium(sodPerHour)} per hour; consider higher end in heat/heavy sweat.`);
+      notes.push(`Daily carbs target ${round(gkgLow,1)}–${round(gkgHigh,1)} g/kg/day (${fmtCarbs(carbsDayMid)} mid). During runs ~${fmtCarbs(carbsPerHour)}/h.`);
+      $('notes').innerHTML = notes.map(n=>`<div>• ${n}</div>`).join('');
+
+      updateURL();
+    }
+
+    // --- URL sync for shareability ---
+    function parseURL(){
+      const p = new URLSearchParams(location.search);
+      const g = (key)=>p.get(key);
+      const u = g('u'); if(u) setUnits(u);
+      const ids = ['age','sex','height','weight','duration','intensity','goal','temp','humidity','sweater'];
+      ids.forEach(id=>{
+        const v = g(id);
+        if(v!==null){ $(id).value = v; }
+      });
+      // After parsing, run a calc
+      calc();
+    }
+
+    function updateURL(){
+      const p = new URLSearchParams();
+      p.set('u', units);
+      ['age','sex','height','weight','duration','intensity','goal','temp','humidity','sweater'].forEach(id=>{
+        const el = $(id);
+        if(el && el.value!=='') p.set(id, el.value);
+      });
+      const newURL = `${location.origin}${location.pathname}?${p.toString()}`;
+      history.replaceState(null,'',newURL);
+    }
+
+    // --- Handlers ---
+    $('calc').addEventListener('click', calc);
+    $('reset').addEventListener('click', ()=>{
+      ['age','height','weight','duration'].forEach(id=>$(id).value='');
+      $('sex').value='unspecified';
+      $('intensity').value='easy';
+      $('goal').value='maintain';
+      $('temp').value='temperate';
+      $('humidity').value='moderate';
+      $('sweater').value='average';
+      setUnits('imperial');
+      calc();
+    });
+    $('share').addEventListener('click', async ()=>{
+      const url = location.href;
+      try{
+        await navigator.clipboard.writeText(url);
+        alert('Link copied to clipboard!');
+      } catch(e){
+        prompt('Copy this link:', url);
+      }
+    });
+
+    // Recalculate on any change for snappy UX
+    document.querySelectorAll('input,select').forEach(el=>{
+      el.addEventListener('input', ()=>calc());
+      el.addEventListener('change', ()=>calc());
+    });
+
+    // Init
+    parseURL();
+  </script>
+</body>
+</html>
